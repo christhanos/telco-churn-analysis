@@ -11,3 +11,5 @@ The telecommunications company is experiencing a high rate of customer churn (cu
 
 ## Project Structure
 *(To be updated as the project progresses)*
+
+*Update: Το περιβάλλον (Git , venv, VS Code) στήθηκε επιτυχώς!*
