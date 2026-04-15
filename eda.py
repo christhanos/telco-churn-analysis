@@ -46,6 +46,8 @@ print(df[df['tenure'] == 0][['tenure', 'MonthlyCharges', 'TotalCharges']])
 occur = df.groupby(["Churn"]).size()
 print(occur)
 
+
+
 #plot contract -churn 
 
 plt.rcParams['font.family'] = 'serif'
@@ -60,3 +62,23 @@ plt.grid(axis = 'y', linestyle = '--', alpha = 0.3)
 sns.despine(top=True, right=True, left=False)
 plt.savefig('plots/contract_churn.png', bbox_inches='tight')
 plt.show()
+
+
+#transforming the 'Yes' and 'No' values in 'Churn' column in 1-hot
+df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
+print(df['Churn'].value_counts())
+
+print(df['PaymentMethod'].head())
+
+# Βλέπουμε πόσες στήλες έχουμε αρχικά
+print("\nΣτήλες πριν το One-Hot Encoding:", df.shape[1])
+
+# 1. Διαγράφουμε το ID γιατί είναι άχρηστο για την πρόβλεψη
+df = df.drop('customerID', axis=1)
+
+# Η Pandas βρίσκει όλες τις υπόλοιπες στήλες κειμένου και τις μετατρέπει
+df_encoded = pd.get_dummies(df, drop_first=True)
+
+# Βλέπουμε πόσες στήλες φτιάχτηκαν συνολικά
+print("Στήλες μετά το One-Hot Encoding:", df_encoded.shape[1])
+
