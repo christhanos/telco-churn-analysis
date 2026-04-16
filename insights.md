@@ -17,3 +17,13 @@
 Το επόμενο βήμα είναι η βελτίωση του **Recall**, ώστε να μην χάνουμε αυτούς που φεύγουν. Απαιτείται αντιμετώπιση του Class Imbalance μέσω:
 1. Εφαρμογής μαθηματικών βαρών (Class Weighting) στο υπάρχον γραμμικό μοντέλο.
 2. Μετάβασης σε πιο πολύπλοκους, μη-γραμμικούς αλγορίθμους (Ensemble Methods).
+
+Baseline Logistic Regression Report:
+              precision    recall  f1-score   support
+
+  Stayed (0)       0.86      0.90      0.88      1036
+ Churned (1)       0.69      0.60      0.64       373
+
+    accuracy                           0.82      1409
+   macro avg       0.77      0.75      0.76      1409
+weighted avg       0.82      0.82      0.82      1409
