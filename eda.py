@@ -4,6 +4,10 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix
 
 
 # Συνδεόμαστε με την βάση και τραβάμε ΟΛΑ τα δεδομένα
@@ -77,8 +81,31 @@ print("\nΣτήλες πριν το One-Hot Encoding:", df.shape[1])
 df = df.drop('customerID', axis=1)
 
 # Η Pandas βρίσκει όλες τις υπόλοιπες στήλες κειμένου και τις μετατρέπει
-df_encoded = pd.get_dummies(df, drop_first=True)
+df_encoded = pd.get_dummies(df, drop_first=True, dtype = int)
 
 # Βλέπουμε πόσες στήλες φτιάχτηκαν συνολικά
 print("Στήλες μετά το One-Hot Encoding:", df_encoded.shape[1])
 
+X = df_encoded.loc[:, df_encoded.columns != 'Churn']
+y = df_encoded['Churn']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state= 42, test_size= 0.2, shuffle = True)
+
+print(f"X_train size is : {X_train.shape}")
+print(f"X_test size is : {X_test.shape}")
+print(f"y_train size is : {y_train.shape}")
+print(f"y_test size is : {y_test.shape}")
+
+clf = LogisticRegression(max_iter = 1000, random_state = 0)
+clf.fit(X_train, y_train)
+
+y_pred = clf.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred) *100
+print(f"Logistic Regression model accuracy: {accuracy:.2f}%")
+
+conf_matrix = confusion_matrix(y_test, y_pred)
+print(f"Confusion Matrix:\n {conf_matrix}")
+class_report = classification_report(y_test, y_pred, target_names=['Stayed (0)', 'Churned (1)'])
+print("Classification report")
+print(class_report)
