@@ -86,9 +86,12 @@ df_encoded = pd.get_dummies(df, drop_first=True, dtype = int)
 # Βλέπουμε πόσες στήλες φτιάχτηκαν συνολικά
 print("Στήλες μετά το One-Hot Encoding:", df_encoded.shape[1])
 
+#variable that holds the features (all the columns except our target variable 'Churn')
 X = df_encoded.loc[:, df_encoded.columns != 'Churn']
+#variable that holds our target, which is the Churn of a customer
 y = df_encoded['Churn']
 
+#split the data into 80% training and 20% testing
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state= 42, test_size= 0.2, shuffle = True)
 
 print(f"X_train size is : {X_train.shape}")
@@ -96,6 +99,7 @@ print(f"X_test size is : {X_test.shape}")
 print(f"y_train size is : {y_train.shape}")
 print(f"y_test size is : {y_test.shape}")
 
+#apply logistic Regression only on the train data 
 clf = LogisticRegression(max_iter = 1000, random_state = 0)
 clf.fit(X_train, y_train)
 
