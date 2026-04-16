@@ -18,7 +18,7 @@
 1. Εφαρμογής μαθηματικών βαρών (Class Weighting) στο υπάρχον γραμμικό μοντέλο.
 2. Μετάβασης σε πιο πολύπλοκους, μη-γραμμικούς αλγορίθμους (Ensemble Methods).
 
-'''text
+```text
 Baseline Logistic Regression Report:
               precision    recall  f1-score   support
 
@@ -28,4 +28,4 @@ Baseline Logistic Regression Report:
     accuracy                           0.82      1409
    macro avg       0.77      0.75      0.76      1409
 weighted avg       0.82      0.82      0.82      1409
-'''
+```
