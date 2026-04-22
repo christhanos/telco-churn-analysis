@@ -29,3 +29,15 @@ Baseline Logistic Regression Report:
    macro avg       0.77      0.75      0.76      1409
 weighted avg       0.82      0.82      0.82      1409
 ```
+
+```text
+Logistic Regression Report with class_weght = 'balanced'
+              precision    recall  f1-score   support
+
+  Stayed (0)       0.93      0.72      0.81      1036
+ Churned (1)       0.52      0.84      0.64       373
+
+    accuracy                           0.75      1409
+   macro avg       0.72      0.78      0.73      1409
+weighted avg       0.82      0.75      0.77      1409
+```
