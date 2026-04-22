@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
 
 
 # Συνδεόμαστε με την βάση και τραβάμε ΟΛΑ τα δεδομένα
@@ -100,7 +101,7 @@ print(f"y_train size is : {y_train.shape}")
 print(f"y_test size is : {y_test.shape}")
 
 #apply logistic Regression only on the train data 
-clf = LogisticRegression(max_iter = 1000, random_state = 0)
+clf = LogisticRegression(max_iter = 1000,class_weight = 'balanced', random_state = 0)
 clf.fit(X_train, y_train)
 
 y_pred = clf.predict(X_test)
@@ -111,5 +112,15 @@ print(f"Logistic Regression model accuracy: {accuracy:.2f}%")
 conf_matrix = confusion_matrix(y_test, y_pred)
 print(f"Confusion Matrix:\n {conf_matrix}")
 class_report = classification_report(y_test, y_pred, target_names=['Stayed (0)', 'Churned (1)'])
+print("Classification report")
+print(class_report)
+
+
+classifier = RandomForestClassifier(n_estimators = 100, class_weight= 'balanced', random_state = 42)
+classifier.fit(X_train, y_train)
+y_pred_rf = classifier.predict(X_test)
+conf_matrix = confusion_matrix(y_test, y_pred)
+print(f"Confusion Matrix:\n {conf_matrix}")
+class_report = classification_report(y_test, y_pred_rf, target_names=['Stayed (0)', 'Churned (1)'])
 print("Classification report")
 print(class_report)
