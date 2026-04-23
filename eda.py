@@ -173,7 +173,7 @@ axes[0].set_title('Churn by Contract Type',fontsize=14, fontweight='bold')
 axes[0].set_ylabel('Customers')
 sns.despine(top=True, right=True, left=False)
 axes[0].grid(True, axis='y', linestyle='--', alpha=0.6)
-plt.savefig('plots/contract_churn.png', bbox_inches='tight')
+
 
 sns.histplot(data=df, x='InternetService', hue='Churn', multiple='stack', shrink=0.8, ax=axes[1], palette=custom_palette)
 formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
@@ -182,7 +182,7 @@ axes[1].set_title('Churn by Internet Service',fontsize=14, fontweight='bold')
 axes[1].set_ylabel('Customers')
 sns.despine(top=True, right=True, left=False)
 axes[1].grid(True, axis='y', linestyle='--', alpha=0.6)
-plt.savefig('plots/contract_churn.png', bbox_inches='tight')
+
 
 sns.histplot(data=df, y='PaymentMethod', hue='Churn', multiple='stack', shrink=0.8, ax=axes[2], palette=custom_palette)
 formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
@@ -191,7 +191,7 @@ axes[2].set_title('Churn by Payment Method', fontsize=14, fontweight='bold')
 axes[2].set_xlabel('Customers')
 sns.despine(top=True, right=True, left=False)
 axes[2].grid(True, axis='x', linestyle='--', alpha=0.6)
-plt.savefig('plots/contract_churn.png', bbox_inches='tight')
+
 
 
 # Κλειδώνουμε τις θέσεις του άξονα y για να μην μας βγάλει warning η βιβλιοθήκη
@@ -227,4 +227,5 @@ fig.legend(handles=[stay_patch, churn_patch],
 # Αφήνουμε χώρο στην κορυφή για το legend
 plt.tight_layout(rect=[0, 0, 1, 0.9])
 
+plt.savefig('plots/churn.png', bbox_inches='tight')
 plt.show()
