@@ -56,7 +56,9 @@ print(occur)
 #plot contract -churn 
 
 plt.rcParams['font.family'] = 'serif'
-ax = sns.countplot(data=df, x="Contract", hue='Churn',color = 'red', legend = 'brief', gap = 0.05, palette={'Yes':'red', 'No':'green' }, saturation=.75)
+# Χρώματα: Μπλε για Stay (0) και Πορτοκαλί για Churn (1)
+custom_palette = {0: "#4C72B0", 1: "#DD8452"}
+ax = sns.countplot(data=df, x="Contract", hue='Churn', legend = 'brief', gap = 0.05, palette={'No': custom_palette[0], 'Yes': custom_palette[1]}, saturation=.75)
 
 # Φορμάρισμα άξονα y σε χιλιάδες (k)
 formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
@@ -100,7 +102,34 @@ print(f"X_test size is : {X_test.shape}")
 print(f"y_train size is : {y_train.shape}")
 print(f"y_test size is : {y_test.shape}")
 
-#apply logistic Regression only on the train data 
+#apply logistic Regression only on the train data
+# use logistic Regression as my baseline 
+clf = LogisticRegression(max_iter = 1000, random_state = 0)
+clf.fit(X_train, y_train)
+
+y_pred = clf.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred) *100
+print(f"Logistic Regression model accuracy: {accuracy:.2f}%")
+
+conf_matrix = confusion_matrix(y_test, y_pred)
+print(f"Confusion Matrix:\n {conf_matrix}")
+class_report = classification_report(y_test, y_pred, target_names=['Stayed (0)', 'Churned (1)'])
+print("Classification report")
+print(class_report)
+
+#I continue trying applying ml enselmble algorithm -> Random Forest classifier 
+#n_estimators mean that i use 100 decision trees in my algorithm
+classifier = RandomForestClassifier(n_estimators = 100, class_weight= 'balanced', random_state = 42)
+classifier.fit(X_train, y_train)
+y_pred_rf = classifier.predict(X_test)
+conf_matrix = confusion_matrix(y_test, y_pred)
+print(f"Confusion Matrix:\n {conf_matrix}")
+class_report = classification_report(y_test, y_pred_rf, target_names=['Stayed (0)', 'Churned (1)'])
+print("Classification report")
+print(class_report)
+
+# I apply logisticRegression with class_weight = 'balanced' to deal with class imbalance
 clf = LogisticRegression(max_iter = 1000,class_weight = 'balanced', random_state = 0)
 clf.fit(X_train, y_train)
 
@@ -116,11 +145,52 @@ print("Classification report")
 print(class_report)
 
 
-classifier = RandomForestClassifier(n_estimators = 100, class_weight= 'balanced', random_state = 42)
-classifier.fit(X_train, y_train)
-y_pred_rf = classifier.predict(X_test)
-conf_matrix = confusion_matrix(y_test, y_pred)
-print(f"Confusion Matrix:\n {conf_matrix}")
-class_report = classification_report(y_test, y_pred_rf, target_names=['Stayed (0)', 'Churned (1)'])
-print("Classification report")
-print(class_report)
+#why the customers churn?
+#i actully print the df_encoded columns with the One-Hot encoding here
+print(X_train.columns)
+#i print their weights tha logistic regression assigned to them
+print(f"the weights of the classes are: {clf.coef_[0]}")
+d = {"col1": X_train.columns, "col2":clf.coef_[0]}
+df1 = pd.DataFrame(data=d)
+#sort the weights in descending order
+sorted_df1 = df1.sort_values(by = 'col2', ascending = False)
+#print the first 3
+print(f"why the customers churn: {sorted_df1.head(3)}")
+print(f"why the customers stay {sorted_df1.tail(3)}")
+
+
+#plot
+fig, axes = plt.subplots(nrows =1, ncols = 3, figsize = (18,6))
+
+# Χρώματα: Μπλε για Stay (0) και Πορτοκαλί για Churn (1)
+custom_palette = {0: "#4C72B0", 1: "#DD8452"}
+
+#in the x variable i assign the column names from my first dataset without the One-Hot encoding
+sns.countplot(data = df, x = 'Contract',hue = 'Churn', ax=axes[0], palette = custom_palette, gap = 0.05)
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
+axes[0].yaxis.set_major_formatter(formatter)
+axes[0].set_title('Churn by Contract Type',fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Number of Customers')
+sns.despine(top=True, right=True, left=False)
+
+sns.countplot(data=df, x='InternetService', hue='Churn', ax=axes[1], palette=custom_palette, gap = 0.05)
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
+axes[1].yaxis.set_major_formatter(formatter)
+axes[1].set_title('Churn by Internet Service',fontsize=14, fontweight='bold')
+axes[1].set_ylabel('Number of customers')
+sns.despine(top=True, right=True, left=False)
+
+sns.countplot(data=df, y='PaymentMethod', hue='Churn', ax=axes[2], palette=custom_palette, gap = 0.05)
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
+axes[2].xaxis.set_major_formatter(formatter)
+axes[2].set_title('Churn by Payment Method', fontsize=14, fontweight='bold')
+axes[2].set_xlabel('Number of customers')
+sns.despine(top=True, right=True, left=False)
+# Κλειδώνουμε τις θέσεις του άξονα y για να μην μας βγάλει warning η βιβλιοθήκη
+axes[2].set_yticks(axes[2].get_yticks())
+
+# Παίρνουμε τα ονόματα, αντικαθιστούμε το κενό με αλλαγή γραμμής (\n) και τα ξαναβάζουμε
+axes[2].set_yticklabels([label.get_text().replace(' ', '\n') for label in axes[2].get_yticklabels()])
+
+plt.tight_layout()
+plt.show()
