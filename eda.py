@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
-
+import matplotlib.patches as mpatches
 
 # Συνδεόμαστε με την βάση και τραβάμε ΟΛΑ τα δεδομένα
 conn = sqlite3.connect('telco.db')
@@ -166,31 +166,65 @@ fig, axes = plt.subplots(nrows =1, ncols = 3, figsize = (18,6))
 custom_palette = {0: "#4C72B0", 1: "#DD8452"}
 
 #in the x variable i assign the column names from my first dataset without the One-Hot encoding
-sns.countplot(data = df, x = 'Contract',hue = 'Churn', ax=axes[0], palette = custom_palette, gap = 0.05)
-formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
+sns.histplot(data=df, x='Contract', hue='Churn', multiple='stack', shrink=0.8, ax=axes[0], palette=custom_palette, legend = 'auto')
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
 axes[0].yaxis.set_major_formatter(formatter)
 axes[0].set_title('Churn by Contract Type',fontsize=14, fontweight='bold')
-axes[0].set_ylabel('Number of Customers')
+axes[0].set_ylabel('Customers')
 sns.despine(top=True, right=True, left=False)
+axes[0].grid(True, axis='y', linestyle='--', alpha=0.6)
+plt.savefig('plots/contract_churn.png', bbox_inches='tight')
 
-sns.countplot(data=df, x='InternetService', hue='Churn', ax=axes[1], palette=custom_palette, gap = 0.05)
-formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
+sns.histplot(data=df, x='InternetService', hue='Churn', multiple='stack', shrink=0.8, ax=axes[1], palette=custom_palette)
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
 axes[1].yaxis.set_major_formatter(formatter)
 axes[1].set_title('Churn by Internet Service',fontsize=14, fontweight='bold')
-axes[1].set_ylabel('Number of customers')
+axes[1].set_ylabel('Customers')
 sns.despine(top=True, right=True, left=False)
+axes[1].grid(True, axis='y', linestyle='--', alpha=0.6)
+plt.savefig('plots/contract_churn.png', bbox_inches='tight')
 
-sns.countplot(data=df, y='PaymentMethod', hue='Churn', ax=axes[2], palette=custom_palette, gap = 0.05)
-formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else x)
+sns.histplot(data=df, y='PaymentMethod', hue='Churn', multiple='stack', shrink=0.8, ax=axes[2], palette=custom_palette)
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
 axes[2].xaxis.set_major_formatter(formatter)
 axes[2].set_title('Churn by Payment Method', fontsize=14, fontweight='bold')
-axes[2].set_xlabel('Number of customers')
+axes[2].set_xlabel('Customers')
 sns.despine(top=True, right=True, left=False)
+axes[2].grid(True, axis='x', linestyle='--', alpha=0.6)
+plt.savefig('plots/contract_churn.png', bbox_inches='tight')
+
+
 # Κλειδώνουμε τις θέσεις του άξονα y για να μην μας βγάλει warning η βιβλιοθήκη
 axes[2].set_yticks(axes[2].get_yticks())
 
-# Παίρνουμε τα ονόματα, αντικαθιστούμε το κενό με αλλαγή γραμμής (\n) και τα ξαναβάζουμε
+# i do this on the third figure in order not to have overlapping words
 axes[2].set_yticklabels([label.get_text().replace(' ', '\n') for label in axes[2].get_yticklabels()])
 
-plt.tight_layout()
+# i take the legends of the first graph
+handles, labels = axes[0].get_legend_handles_labels()
+
+# 1. Φτιάχνουμε τα δικά μας χειροκίνητα "δείγματα" (patches) με τα χρώματα της παλέτας μας
+stay_patch = mpatches.Patch(color="#4C72B0", label='Stayed (0)')
+churn_patch = mpatches.Patch(color="#DD8452", label='Churned (1)')
+
+
+#  ΜΕΤΑ διαγράφουμε τα τοπικά legends και από τα 3 γραφήματα
+for ax in axes:
+    legend = ax.get_legend()
+    if legend is not None:
+        legend.remove()
+
+
+
+# 3. Φτιάχνουμε το κεντρικό legend δίνοντάς του τα χειροκίνητα patches που φτιάξαμε στο βήμα 1
+fig.legend(handles=[stay_patch, churn_patch], 
+           loc='upper center', 
+           bbox_to_anchor=(0.5, 0.98), 
+           ncol=2, 
+           title='Customer Status', 
+           fontsize=12)
+
+# Αφήνουμε χώρο στην κορυφή για το legend
+plt.tight_layout(rect=[0, 0, 1, 0.9])
+
 plt.show()
