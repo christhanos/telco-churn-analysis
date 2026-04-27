@@ -10,6 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 import matplotlib.patches as mpatches
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # Συνδεόμαστε με την βάση και τραβάμε ΟΛΑ τα δεδομένα
 conn = sqlite3.connect('telco.db')
@@ -199,6 +200,161 @@ axes[2].set_yticks(axes[2].get_yticks())
 
 # i do this on the third figure in order not to have overlapping words
 axes[2].set_yticklabels([label.get_text().replace(' ', '\n') for label in axes[2].get_yticklabels()])
+
+# i take the legends of the first graph
+handles, labels = axes[0].get_legend_handles_labels()
+
+# 1. Φτιάχνουμε τα δικά μας χειροκίνητα "δείγματα" (patches) με τα χρώματα της παλέτας μας
+stay_patch = mpatches.Patch(color="#4C72B0", label='Stayed (0)')
+churn_patch = mpatches.Patch(color="#DD8452", label='Churned (1)')
+
+
+#  ΜΕΤΑ διαγράφουμε τα τοπικά legends και από τα 3 γραφήματα
+for ax in axes:
+    legend = ax.get_legend()
+    if legend is not None:
+        legend.remove()
+
+
+
+# 3. Φτιάχνουμε το κεντρικό legend δίνοντάς του τα χειροκίνητα patches που φτιάξαμε στο βήμα 1
+fig.legend(handles=[stay_patch, churn_patch], 
+           loc='upper center', 
+           bbox_to_anchor=(0.5, 0.98), 
+           ncol=2, 
+           title='Customer Status', 
+           fontsize=12)
+
+# Αφήνουμε χώρο στην κορυφή για το legend
+plt.tight_layout(rect=[0, 0, 1, 0.9])
+
+plt.savefig('plots/churn.png', bbox_inches='tight')
+plt.show()
+
+#multicollinearity check ! συμβαίνει όταν 2 ή περισσότερες μεταβλητές μετράνε το ίδιο πράγμα
+
+X_vif = X_train # (Άλλαξέ το αν η μεταβλητή σου λέγεται αλλιώς)
+
+# Φτιάχνουμε ένα άδειο DataFrame για να αποθηκεύσουμε τα αποτελέσματα όμορφα
+vif_data = pd.DataFrame()
+vif_data["Feature"] = X_vif.columns
+
+# Υπολογίζουμε το VIF για κάθε μία στήλη ξεχωριστά
+vif_data["VIF"] = [variance_inflation_factor(X_vif.values, i) for i in range(len(X_vif.columns))]
+
+# Ταξινομούμε από το μεγαλύτερο VIF στο μικρότερο, για να δούμε τα "προβλήματα" στην κορυφή
+vif_data = vif_data.sort_values(by="VIF", ascending=False).reset_index(drop=True)
+
+print("=== VIF DIAGNOSTIC TEST ===")
+print(vif_data.head(10)) # Τυπώνουμε τους 10 μεγαλύτερους "ενόχους"
+
+#========================================
+# Λίστα με τις "τοξικές" στήλες που βρήκαμε από το VIF
+columns_to_drop = [
+    'OnlineSecurity_No internet service',
+    'TechSupport_No internet service',
+    'StreamingTV_No internet service',
+    'DeviceProtection_No internet service',
+    'OnlineBackup_No internet service',
+    'StreamingMovies_No internet service',
+    'MonthlyCharges',
+    'TotalCharges',     # <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
+    'PhoneService_Yes'  # <-- ΝΕΑ ΠΡΟΣΘΗΚΗ
+]
+
+
+# Τις αφαιρούμε από το X_vif
+X_vif_clean = X_vif.drop(columns=columns_to_drop)
+
+# Ξανατρέχουμε το VIF στο "καθαρό" dataset
+vif_data_clean = pd.DataFrame()
+vif_data_clean["Feature"] = X_vif_clean.columns
+vif_data_clean["VIF"] = [variance_inflation_factor(X_vif_clean.values, i) for i in range(len(X_vif_clean.columns))]
+vif_data_clean = vif_data_clean.sort_values(by="VIF", ascending=False).reset_index(drop=True)
+
+print("\n=== VIF AFTER CLEANING ===")
+print(vif_data_clean.head(10))
+
+# 1. Καθαρίζουμε τα δεδομένα εκπαίδευσης και δοκιμής
+X_train_final = X_train.drop(columns=columns_to_drop)
+X_test_final = X_test.drop(columns=columns_to_drop)
+
+# 2. Αρχικοποιούμε το μοντέλο (κρατάμε το class_weight='balanced' για το Churn!)
+final_model = LogisticRegression(max_iter=1000, class_weight='balanced')
+
+# 3. Το εκπαιδεύουμε στα καθαρά δεδομένα
+final_model.fit(X_train_final, y_train)
+
+# 4. Κάνουμε τις τελικές προβλέψεις
+y_pred_final = final_model.predict(X_test_final)
+
+# 5. Βλέπουμε το τελικό σκορ
+print("\n=== FINAL CLASSIFICATION REPORT ===")
+print(classification_report(y_test, y_pred_final))
+
+# 6. Εξάγουμε τα τελικά, "καθαρά" βάρη για να δούμε τι άλλαξε
+final_weights = pd.DataFrame({
+    'Feature': X_train_final.columns,
+    'Weight': final_model.coef_[0]
+}).sort_values(by='Weight', ascending=False)
+
+print("\n=== TOP 3 REASONS TO CHURN (Positive Weights) ===")
+print(final_weights.head(3))
+
+print("\n=== TOP 3 REASONS TO STAY (Negative Weights) ===")
+print(final_weights.tail(3))
+
+#plot
+fig, axes = plt.subplots(nrows =1, ncols = 3, figsize = (18,6))
+
+# Χρώματα: Μπλε για Stay (0) και Πορτοκαλί για Churn (1)
+custom_palette = {0: "#4C72B0", 1: "#DD8452"}
+
+#in the x variable i assign the column names from my first dataset without the One-Hot encoding
+sns.histplot(data=df, x='InternetService', hue='Churn', multiple='stack', shrink=0.8, ax=axes[0], palette=custom_palette, legend = 'auto')
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
+axes[0].yaxis.set_major_formatter(formatter)
+axes[0].set_title('Churn by Internet Service',fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Customers')
+sns.despine(top=True, right=True, left=False)
+axes[0].grid(True, axis='y', linestyle='--', alpha=0.6)
+
+
+sns.histplot(data=df, x='MultipleLines', hue='Churn', multiple='stack', shrink=0.8, ax=axes[1], palette=custom_palette)
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >=1000 else int(x))
+axes[1].yaxis.set_major_formatter(formatter)
+axes[1].set_title('Churn by Multiple Lines',fontsize=14, fontweight='bold')
+axes[1].set_ylabel('Customers')
+sns.despine(top=True, right=True, left=False)
+axes[1].grid(True, axis='y', linestyle='--', alpha=0.6)
+
+
+# Φτιάχνουμε ένα προσωρινό mapping για να διαβάζεται το γράφημα 
+plot_data = df.copy()
+plot_data['StreamingMovies'] = plot_data['StreamingMovies'].replace({0: 'No', 1: 'Yes', 2: 'No internet service'})
+
+# Ζωγραφίζουμε χρησιμοποιώντας το plot_data αντί για το df
+sns.histplot(data=plot_data, x='StreamingMovies', hue='Churn', multiple='stack', shrink=0.8, ax=axes[2], palette=custom_palette)
+
+# ΔΙΟΡΘΩΣΗ 1: int αντί για float
+formatter = FuncFormatter(lambda x, pos: f'{float(x/1000)}k' if x >= 1000 else int(x))
+
+# ΔΙΟΡΘΩΣΗ 2: yaxis αντί για xaxis
+axes[2].yaxis.set_major_formatter(formatter)
+
+axes[2].set_title('Churn by Streaming Movies', fontsize=14, fontweight='bold')
+axes[2].set_ylabel('Customers')
+#  xlabel 
+axes[2].set_xlabel('Streaming Movies') 
+sns.despine(top=True, right=True, left=False)
+axes[2].grid(True, axis='y', linestyle='--', alpha=0.6)
+
+
+
+# Κλειδώνουμε τις θέσεις του άξονα y για να μην μας βγάλει warning η βιβλιοθήκη
+axes[2].set_yticks(axes[2].get_yticks())
+
+
 
 # i take the legends of the first graph
 handles, labels = axes[0].get_legend_handles_labels()
