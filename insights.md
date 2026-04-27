@@ -1,43 +1,39 @@
-1. Data Cleaning: Βρέθηκαν 11 νέοι πελάτες (tenure = 0) χωρίς TotalCharges. Τα κενά συμπληρώθηκαν με 0.
-2. Class Imbalance: Το dataset έχει 5.174 πελάτες που έμειναν και 1.869 που έφυγαν.
-3. Contract Type Insight: Οι πελάτες με "Month-to-month" συμβόλαιο είναι αυτοί που εγκαταλείπουν την εταιρεία με τη μεγαλύτερη συχνότητα. (Βλέπε: plots/contract_churn.png)
-##  Model Evaluation: Baseline Logistic Regression
 
-**Μοντέλο:** Logistic Regression (Χωρίς παραμετροποίηση)
-**Συνολικό Accuracy:** 82% 
 
-### Business Impact & Αξιολόγηση
-Το αρχικό (baseline) μοντέλο μας επιβεβαίωσε την ύπαρξη του "Accuracy Paradox". Αν και το 82% φαίνεται υψηλό, κρύβει την αδυναμία του αλγορίθμου να διαχειριστεί την ανισορροπία των δεδομένων (Class Imbalance).
 
-* **Το Πρόβλημα των Χαμένων Πελατών (Recall = 60%):** Από το σύνολο των πελατών που *πραγματικά* ακύρωσαν το συμβόλαιό τους στο test set, το μοντέλο εντόπισε μόνο το 60%. Το υπόλοιπο 40% (149 πελάτες) διέφυγε εντελώς της προσοχής του αλγορίθμου. Σε πραγματικές συνθήκες, αυτό σημαίνει χαμένα έσοδα, καθώς η εταιρεία δεν θα προλάβαινε να τους κάνει καμία προσφορά διατήρησης (retention offer).
-  
-* **Το Κόστος των Λάθος Συναγερμών (Precision = 69%):** Όταν το μοντέλο "χτυπάει συναγερμό" για έναν πελάτη, έχει δίκιο στο 69% των περιπτώσεων. Το υπόλοιπο 31% είναι False Positives. Αν η εταιρεία βασιζόταν σε αυτό το μοντέλο για να μοιράσει ακριβά δώρα ή εκπτώσεις, ένα 31% του budget θα πήγαινε χαμένο σε πελάτες που ούτως ή άλλως δεν σκόπευαν να αποχωρήσουν.
+## 1. Data Cleaning & Exploratory Insights
+Before training the predictive models, the initial data analysis revealed the following:
+* **Data Quality:** We identified 11 brand-new customers (`tenure = 0`) with missing `TotalCharges`. These null values were filled with 0, as these customers practically haven't generated their first bill yet.
+* **Class Imbalance:** The dataset was heavily imbalanced. Out of 7,043 customers, 5,174 (73%) stayed, while only 1,869 (27%) churned.
+* **Contract Insight:** Customers on a "Month-to-month" contract exhibit significantly higher churn rates compared to other contract types *(See: plots/churn.png)*.
 
-### Action Items
-Το επόμενο βήμα είναι η βελτίωση του **Recall**, ώστε να μην χάνουμε αυτούς που φεύγουν. Απαιτείται αντιμετώπιση του Class Imbalance μέσω:
-1. Εφαρμογής μαθηματικών βαρών (Class Weighting) στο υπάρχον γραμμικό μοντέλο.
-2. Μετάβασης σε πιο πολύπλοκους, μη-γραμμικούς αλγορίθμους (Ensemble Methods).
+---
 
-```text
-Baseline Logistic Regression Report:
-              precision    recall  f1-score   support
+## 2. Model Evolution: Solving the "Accuracy Paradox"
 
-  Stayed (0)       0.86      0.90      0.88      1036
- Churned (1)       0.69      0.60      0.64       373
+### Phase 1: The Baseline Model
+The initial Logistic Regression model (with default parameters) achieved a seemingly high **Accuracy of 82%**. However, this metric masked the algorithm's inability to handle the imbalanced data:
+* **The Problem of Missed Customers (Recall = 60%):** Out of all the customers who *actually* canceled their service, the model only successfully identified 60%. The remaining 40% slipped through the cracks. In a real-world scenario, this translates directly to lost revenue, as the company would miss the opportunity to intervene with a retention offer.
 
-    accuracy                           0.82      1409
-   macro avg       0.77      0.75      0.76      1409
-weighted avg       0.82      0.82      0.82      1409
-```
+### Phase 2: The Class Weighting Strategy (Final Model)
+To stop this customer "leakage," we applied mathematical weights (`class_weight='balanced'`), forcing the algorithm to pay more attention to the minority class (the churners). 
 
-```text
-Logistic Regression Report with class_weght = 'balanced'
-              precision    recall  f1-score   support
+**The Business Trade-off:**
+* **Recall skyrocketed to 84%.** The model now successfully catches almost all customers who are at risk of leaving.
+* Accuracy dropped to 75% and Precision to 52%. This means the model will generate more "false alarms" (False Positives).
+* **Conclusion:** In the telecommunications industry, the cost of offering a proactive discount to someone who wasn't actually planning to leave (a False Positive) is negligible compared to the heavy cost of losing a customer to a competitor forever. Therefore, optimizing for Recall makes this the ideal model for production.
 
-  Stayed (0)       0.93      0.72      0.81      1036
- Churned (1)       0.52      0.84      0.64       373
+---
 
-    accuracy                           0.75      1409
-   macro avg       0.72      0.78      0.73      1409
-weighted avg       0.82      0.75      0.77      1409
-```
+## 3. Final Business Insights (The "Why")
+After statistically safeguarding the model (removing multicollinearity noise via VIF diagnostics), we extracted the final model weights to uncover the true drivers behind customer decisions:
+
+** Top 3 Churn Drivers (Risk Factors):**
+1. **Fiber Optic Service:** The strongest indicator of churn. This heavily suggests underlying technical issues, frequent outages, or unsatisfactory speeds with the premium fiber service that are driving customers away.
+2. **Multiple Lines (No phone service):** Customers with this specific, non-standard line configuration show a higher propensity to leave.
+3. **Streaming Movies:** Subscribing to movie streaming actually increases churn risk. This indicates that the company's content offering might be severely lacking compared to external competitors (e.g., Netflix), making customers feel they are overpaying.
+
+** Top 3 Retention Drivers (Loyalty Factors):**
+1. **Long-Term Contracts (1 & 2 Years):** These serve as the absolute strongest defense against competitor poaching.
+2. **Tenure:** The more months a customer spends on the network, the less likely they are to churn. Loyalty compounds over time.
+3. **No Internet Service:** A specific demographic segment (likely older customers relying solely on landlines) remains extremely loyal and is largely unaffected by aggressive market offers.
