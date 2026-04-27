@@ -33,7 +33,7 @@ By extracting the weights from the statistically robust Logistic Regression mode
 Below is a snapshot of the custom dashboard built to visualize the risk of churn across different service categories.
 
 ![Customer Churn Dashboard](plots/churn.png)
-*(Ensure the image is saved in a `plots/` folder in your repository for this to render correctly)*
+
 
 ## How to Run
 1. Clone this repository.
