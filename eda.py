@@ -12,18 +12,27 @@ from sklearn.ensemble import RandomForestClassifier
 import matplotlib.patches as mpatches
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
-# Συνδεόμαστε με την βάση και τραβάμε ΟΛΑ τα δεδομένα
+# Connect with the dataset and we retrieve all the data
 conn = sqlite3.connect('telco.db')
 df = pd.read_sql("SELECT * FROM churn_data",conn )
 conn.close()
 
-print("Τα δεδομένα φορτώθηκαν επιτυχώς για ανάλυση!")
+print("The dataset is loaded successfully")
 
-print(f"Οι πελάτες και τα χαρακτηριστικά είναι:{df.shape}\n")
-print(f"μηδενικά entries ανα στήλη:\n {df.isnull().sum()}") #count null values per column
-print(df.info())# summary info including missing values and data type of features
+#First thing first: I want to see the shape of the dataset in order to pinpoint anomalies
+print(f"The shape of the dataset is:{df.shape}\n")
+print(df.head())
+print(df.columns)
 
+#Check here if the customerID is appearing only once for each customer.
+print(df['customerID'].nunique())
 
+#count null values per column
+print(f"Zero entries per column:\n {df.isnull().sum()}") 
+# summary info including missing values and data type of features
+print(df.info())
+
+#==================================================================
 #  Μετατρέπουμε τη στήλη σε αριθμούς και ζορίζουμε τα λάθη (τα κενά) να γίνουν NaN
 df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
 
